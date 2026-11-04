@@ -23,6 +23,10 @@ jobs:
           arch: win64_mingw
           tools: 'tools_mingw1310'
           cache: true
+          # aqtinstall 3.3.0 (latest release) predates the Qt 6.11 repo layout
+          # change. Use the merge commit of miurahr/aqtinstall#1000, which adds
+          # 6.11 support. Switch back to a release once one newer than 3.3.0 ships.
+          aqtsource: 'git+https://github.com/miurahr/aqtinstall.git@8c3695d4a4e1ceabf6a74dc6c79681656dc6b74b'
 
       - name: Install CMake and Ninja
         uses: lukka/get-cmake@latest
