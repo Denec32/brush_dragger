@@ -56,3 +56,55 @@ jobs:
           name: brush_dragger-windows-${{ github.sha }}
           path: build/bin/
           if-no-files-found: error
+
+  build-linux:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v4
+
+      # Headers Qt6Gui's CMake config looks for (OpenGL, EGL, xkbcommon,
+      # Vulkan, fontconfig); the Qt binaries themselves come from aqt below.
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl-dev libegl-dev libxkbcommon-dev libvulkan-dev libfontconfig1-dev
+
+      - name: Install Qt 6.11.3
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.11.3'
+          host: linux
+          target: desktop
+          arch: linux_gcc_64
+          cache: true
+          # Same pinned aqtinstall commit as the Windows job (Qt 6.11 support).
+          aqtsource: 'git+https://github.com/miurahr/aqtinstall.git@8c3695d4a4e1ceabf6a74dc6c79681656dc6b74b'
+
+      - name: Install CMake and Ninja
+        uses: lukka/get-cmake@latest
+
+      # Uses the runner's GCC 13, which has full C++20 support.
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
+          -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="${{ github.workspace }}/build/bin"
+
+      - name: Build
+        run: cmake --build build
+
+      # No deploy step on Linux: the binary needs Qt 6.11 at runtime.
+      # Tar it so the executable bit survives upload-artifact.
+      - name: Package app
+        run: tar -czf brush_dragger-linux.tar.gz -C build/bin brush_dragger
+
+      - name: Upload app
+        uses: actions/upload-artifact@v4
+        with:
+          name: brush_dragger-linux-${{ github.sha }}
+          path: brush_dragger-linux.tar.gz
+          if-no-files-found: error
