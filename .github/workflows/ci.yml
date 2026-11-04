@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v4
+
+      # Same Qt build and MinGW toolchain as local dev (see CLAUDE.md):
+      # Qt 6.11.3 mingw_64 + MinGW 13.1 (MSVCRT), not the runner's own GCC.
+      - name: Install Qt 6.11.3 and MinGW 13.1
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.11.3'
+          host: windows
+          target: desktop
+          arch: win64_mingw
+          tools: 'tools_mingw1310'
+          cache: true
+
+      - name: Install CMake and Ninja
+        uses: lukka/get-cmake@latest
+
+      # Prepend Qt's MinGW so it wins over any GCC preinstalled on the runner.
+      - name: Put MinGW 13.1 on PATH
+        shell: pwsh
+        run: Add-Content $env:GITHUB_PATH "$env:IQTA_TOOLS\mingw1310_64\bin"
+
+      - name: Configure
+        shell: pwsh
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+          -DCMAKE_CXX_COMPILER="$env:IQTA_TOOLS/mingw1310_64/bin/g++.exe"
+          -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="${{ github.workspace }}/build/bin"
+
+      # The POST_BUILD windeployqt step copies Qt DLLs, plugins and the MinGW
+      # runtime next to the exe, so build/bin is a runnable app.
+      - name: Build
+        run: cmake --build build
+
+      - name: Upload app
+        uses: actions/upload-artifact@v4
+        with:
+          name: brush_dragger-windows-${{ github.sha }}
+          path: build/bin/
+          if-no-files-found: error
