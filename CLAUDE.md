@@ -9,3 +9,9 @@ Qt 6 Widgets app, C++20, CMake + Ninja.
 
 ## Git
 - Don't add Co-Authored-By trailers to commit messages.
+- master is protected by a ruleset: no direct pushes, and changes land via
+  PR only after the `build-windows` and `build-linux` CI checks pass.
+- Workflow: create a branch, commit, `git push -u origin <branch>`,
+  `gh pr create --fill`, then `gh pr merge --auto --squash`.
+- If a CI job in .github/workflows/ci.yml is renamed, the required check
+  names in the ruleset must be updated to match.
