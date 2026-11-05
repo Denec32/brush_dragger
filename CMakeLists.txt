@@ -10,6 +10,8 @@ qt_standard_project_setup()   # enables AUTOMOC/AUTOUIC, sane Qt defaults
 # Everything but main(), so tests link the same code the app runs.
 add_library(brush_core STATIC
         src/viewport.h
+        src/canvaswidget.h
+        src/canvaswidget.cpp
 )
 target_include_directories(brush_core PUBLIC src)
 target_link_libraries(brush_core PUBLIC
@@ -44,7 +46,11 @@ function(brush_add_test name)
             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests")
     # TAP, not QtTest's default plain-text logger: with Qt 6.11.3 + MinGW the
     # plain logger prints nothing to stdout, so failures were invisible in ctest.
-    add_test(NAME ${name} COMMAND ${name} -o -,tap)
+    # Run from the tests dir: Windows looks for DLLs in the working directory
+    # before PATH, and the build root holds windeployqt's copies, whose
+    # platforms/ has no offscreen plugin (the test then dies in qFatal).
+    add_test(NAME ${name} COMMAND ${name} -o -,tap
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/tests")
     # Headless rendering; on Windows also find Qt and MinGW DLLs without deploying.
     set(env "QT_QPA_PLATFORM=set:offscreen")
     if (WIN32)
@@ -57,3 +63,4 @@ function(brush_add_test name)
 endfunction()
 
 brush_add_test(tst_viewport)
+brush_add_test(tst_canvaswidget)
