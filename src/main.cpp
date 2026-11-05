@@ -1,10 +1,12 @@
 #include <QApplication>
-#include <QPushButton>
+
+#include "canvaswidget.h"
 
 int main(int argc, char *argv[]) {
-    QApplication a(argc, argv);
-    QPushButton button("Hello world!", nullptr);
-    button.resize(200, 100);
-    button.show();
+    QApplication app(argc, argv);
+    CanvasWidget canvas;
+    canvas.setWindowTitle("brush_dragger");
+    canvas.resize(1280, 800);
+    canvas.show();
     return QApplication::exec();
 }
